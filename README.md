@@ -100,8 +100,6 @@ from multiprocessing import Pool
 from Bio import SeqIO
 ```
 
-### What this does
-
 You imported all required libraries.
 
 ### Important libraries
@@ -123,11 +121,10 @@ You imported all required libraries.
 !pip install pyspark biopython requests
 ```
 
-### What this does
 
 Installs required packages in Google Colab.
 
-### Why needed
+
 
 Google Colab does not contain all bioinformatics libraries by default.
 
@@ -146,8 +143,6 @@ os.makedirs("data", exist_ok=True)
 os.makedirs("03_Results", exist_ok=True)
 ```
 
-### What this does
-
 Creates directories to store:
 
 - datasets
@@ -163,7 +158,6 @@ Creates directories to store:
 response = requests.get(url)
 ```
 
-### What this does
 
 Downloads venom-related snake protein sequences from UniProt API.
 
@@ -185,7 +179,7 @@ with open("data/snake_venoms.fasta", "w") as f:
     f.write(response.text)
 ```
 
-### What this does
+
 
 Saves downloaded protein sequences locally.
 
@@ -197,7 +191,6 @@ Saves downloaded protein sequences locally.
 for record in SeqIO.parse(...):
 ```
 
-### What this does
 
 Reads each protein sequence one-by-one.
 
@@ -219,7 +212,7 @@ Then stored everything in a dataframe.
 df_raw = pd.DataFrame(records)
 ```
 
-### What this does
+
 
 Converts extracted protein information into table format.
 
@@ -365,12 +358,8 @@ Measures improvement from parallelization.
 ```python
 df_large = pd.concat([df_raw] * 50)
 ```
-
-### What this does
-
 Copies dataset 50 times.
 
-### Why?
 
 Because original dataset (~500 proteins) is too small for real distributed computing demonstration.
 
@@ -390,8 +379,6 @@ This simulates large-scale workload.
 plt.bar(labels, times)
 ```
 
-### What this does
-
 Creates graph comparing:
 
 - Serial execution time
@@ -408,8 +395,6 @@ This is one of your required result plots.
 ```python
 SparkSession.builder
 ```
-
-### What this does
 
 Initializes Apache Spark engine.
 
@@ -436,7 +421,7 @@ More partitions:
 sdf = spark.createDataFrame(df_features)
 ```
 
-### What this does
+
 
 Moves data into Spark distributed format.
 
@@ -447,8 +432,6 @@ Moves data into Spark distributed format.
 ```python
 sdf.repartition(8)
 ```
-
-### What this does
 
 Splits dataset into 8 partitions.
 
@@ -463,8 +446,6 @@ This is a CORE distributed computing concept.
 ```python
 sdf.cache()
 ```
-
-### What this does
 
 Stores dataframe in memory.
 
