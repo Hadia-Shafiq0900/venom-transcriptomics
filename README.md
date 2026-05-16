@@ -5,16 +5,7 @@
 
 ---
 
-## 👥 Team Members
 
-| Name | Role |
-|------|------|
-| Member 1 | Data ingestion, parallel feature extraction, PySpark pipeline |
-| Member 2 | Statistical analysis, clustering (KMeans + PCA), visualizations |
-
-> *(Replace with actual names)*
-
----
 
 ## 📌 Problem Statement
 
@@ -98,85 +89,626 @@ UniProt API
 [5] Results & Biological Interpretation
         └── Plots, summary tables, cluster profiles
 ```
+# PART 1 — DATA PROCESSING PIPELINE
+
+## Step 1 — Import Libraries
+
+```python
+import numpy as np
+import pandas as pd
+from multiprocessing import Pool
+from Bio import SeqIO
+```
+
+### What this does
+
+You imported all required libraries.
+
+### Important libraries
+
+| Library | Purpose |
+|---|---|
+| pandas | Handle tables/dataframes |
+| numpy | Numerical operations |
+| multiprocessing | Parallel CPU processing |
+| BioPython | Read FASTA biological files |
+| matplotlib | Graph plotting |
+| pyspark | Distributed computing |
 
 ---
 
-## 🚀 Setup & Run Instructions
+## Step 2 — Install Dependencies
 
-### Option A — Google Colab (Recommended)
-
-1. Open [Google Colab](https://colab.research.google.com)
-2. Upload `01_Code/colab_venom.py` or paste it into a notebook
-3. Run all cells top to bottom — all dependencies are installed inside the notebook
-
-### Option B — Local Environment
-
-#### 1. Clone the repository
-
-```bash
-git clone https://github.com/<your-username>/PDC_FinalLab_SnakeVenomTranscriptomics.git
-cd PDC_FinalLab_SnakeVenomTranscriptomics
+```python
+!pip install pyspark biopython requests
 ```
 
-#### 2. Create and activate a virtual environment
+### What this does
 
-```bash
-python -m venv venv
+Installs required packages in Google Colab.
 
-# Windows
-venv\Scripts\activate
+### Why needed
 
-# macOS / Linux
-source venv/bin/activate
-```
+Google Colab does not contain all bioinformatics libraries by default.
 
-#### 3. Install dependencies
+You installed:
 
-```bash
-pip install pyspark biopython requests pandas numpy matplotlib seaborn scikit-learn
-```
-
-#### 4. Run the pipeline
-
-```bash
-python 01_Code/colab_venom.py
-```
-
-> **Note:** Java is required for PySpark. Install [Java 11+](https://adoptium.net/) and ensure `JAVA_HOME` is set before running locally.
+- PySpark
+- BioPython
+- Requests
 
 ---
 
-## 📊 Results Summary
+## Step 3 — Create Folders
 
-### ⚡ Parallel Speedup Benchmark
+```python
+os.makedirs("data", exist_ok=True)
+os.makedirs("03_Results", exist_ok=True)
+```
 
-| Mode | Dataset Size | Time (s) | Speedup |
-|------|-------------|----------|---------|
-| Serial | 25,000 proteins | ~X.XXX s | 1.00× |
-| Parallel (2–4 cores) | 25,000 proteins | ~X.XXX s | ~1.5–2×+ |
+### What this does
 
-> Actual values printed at runtime. Speedup scales with dataset size and available cores.
+Creates directories to store:
 
-### 🔬 PySpark Species-Level Analysis (Top Results)
-
-| Species | # Proteins | Avg Length (AA) | Avg Cysteine Freq |
-|---------|-----------|-----------------|-------------------|
-| Naja naja | ... | ... | ... |
-| Crotalus adamanteus | ... | ... | ... |
-| Ophiophagus hannah | ... | ... | ... |
-
-> *(Populated automatically from `data/species_summary.csv` after running the pipeline)*
-
-### 🧠 KMeans Cluster Biological Interpretation
-
-| Cluster | Likely Protein Type | Characteristics |
-|---------|-------------------|-----------------|
-| **Cluster 0** | 3-finger toxins / Neurotoxins | Short sequences, **high cysteine** frequency — common in *Naja* (cobras) |
-| **Cluster 1** | Phospholipase A2 / Serine proteases | Long sequences, **low cysteine** — typical of pit vipers (*Crotalus*) |
-| **Cluster 2/3** | Metalloproteinases / Multi-domain enzymes | Mixed length, moderate cysteine content |
+- datasets
+- output CSVs
+- graphs
+- results
 
 ---
 
+## Step 4 — Download Dataset from UniProt
+
+```python
+response = requests.get(url)
+```
+
+### What this does
+
+Downloads venom-related snake protein sequences from UniProt API.
+
+The query searches:
+
+- Snake proteins
+- Venom/toxin proteins
+
+Returned format:
+
+- FASTA
+
+---
+
+## Step 5 — Save FASTA File
+
+```python
+with open("data/snake_venoms.fasta", "w") as f:
+    f.write(response.text)
+```
+
+### What this does
+
+Saves downloaded protein sequences locally.
+
+---
+
+## Step 6 — Parse FASTA Sequences
+
+```python
+for record in SeqIO.parse(...):
+```
+
+### What this does
+
+Reads each protein sequence one-by-one.
+
+From every protein you extracted:
+
+| Feature | Meaning |
+|---|---|
+| protein_id | Unique protein ID |
+| species | Snake species |
+| sequence | Amino acid sequence |
+
+Then stored everything in a dataframe.
+
+---
+
+## Step 7 — Convert to Pandas DataFrame
+
+```python
+df_raw = pd.DataFrame(records)
+```
+
+### What this does
+
+Converts extracted protein information into table format.
+
+### Example
+
+| protein_id | species | sequence |
+|---|---|---|
+| P12345 | Naja naja | MKLLL... |
+
+---
+
+## Step 8 — Feature Extraction Function
+
+```python
+def extract_features(row):
+```
+
+### This is the MOST IMPORTANT function in the project.
+
+### Inside the Function
+
+#### A. Sequence Length
+
+```python
+L = len(seq)
+```
+
+Calculates protein length.
+
+#### B. Amino Acid Frequencies
+
+```python
+freq = {aa: seq.count(aa)/L}
+```
+
+Calculates frequency of amino acids.
+
+### Example
+
+| Amino Acid | Meaning |
+|---|---|
+| C | Cysteine |
+| A | Alanine |
+| R | Arginine |
+
+#### C. Motif Detection
+
+### RGD motif
+
+```python
+seq.count("RGD")
+```
+
+Biologically important motif.
+
+### CXXC motif
+
+```python
+seq[i] == "C" and seq[i+3] == "C"
+```
+
+Detects cysteine patterns.
+
+### CXCX motif
+
+Another cysteine-rich pattern.
+
+Important because venom proteins are usually cysteine-rich.
+
+---
+
+## Step 9 — Serial Processing
+
+```python
+serial_results = [extract_features(row) for row in rows]
+```
+
+### What this does
+
+Processes proteins ONE-BY-ONE using single CPU core.
+
+This is baseline performance.
+
+---
+
+## Step 10 — Parallel Processing
+
+```python
+with Pool(processes=4) as pool:
+```
+
+### What this does
+
+Uses multiple CPU cores simultaneously.
+
+Instead of:
+
+- 1 protein at a time
+
+it processes:
+
+- multiple proteins together
+
+### Why this matters
+
+This is the MAIN PDC concept.
+
+You demonstrated:
+
+- multi-core computing
+- parallel execution
+- workload distribution
+
+---
+
+## Step 11 — Speedup Calculation
+
+```python
+speedup = serial_time / parallel_time
+```
+
+### What this does
+
+Measures improvement from parallelization.
+
+### Example
+
+| Mode | Time |
+|---|---|
+| Serial | 10 sec |
+| Parallel | 4 sec |
+
+### Speedup
+
+```python
+10 / 4 = 2.5x
+```
+
+---
+
+## Step 12 — Artificial Dataset Scaling
+
+```python
+df_large = pd.concat([df_raw] * 50)
+```
+
+### What this does
+
+Copies dataset 50 times.
+
+### Why?
+
+Because original dataset (~500 proteins) is too small for real distributed computing demonstration.
+
+After scaling:
+
+```text
+500 → 25,000 proteins
+```
+
+This simulates large-scale workload.
+
+---
+
+## Step 13 — Generate Speedup Plot
+
+```python
+plt.bar(labels, times)
+```
+
+### What this does
+
+Creates graph comparing:
+
+- Serial execution time
+- Parallel execution time
+
+This is one of your required result plots.
+
+---
+
+# PART 2 — SPARK DISTRIBUTED COMPUTING
+
+## Step 14 — Start Spark Session
+
+```python
+SparkSession.builder
+```
+
+### What this does
+
+Initializes Apache Spark engine.
+
+Spark manages distributed processing.
+
+### Important Configurations
+
+```python
+.config("spark.sql.shuffle.partitions", "8")
+```
+
+Defines partition count.
+
+More partitions:
+
+- better distribution
+- better parallelism
+
+---
+
+## Step 15 — Convert Pandas → Spark DataFrame
+
+```python
+sdf = spark.createDataFrame(df_features)
+```
+
+### What this does
+
+Moves data into Spark distributed format.
+
+---
+
+## Step 16 — Repartitioning
+
+```python
+sdf.repartition(8)
+```
+
+### What this does
+
+Splits dataset into 8 partitions.
+
+Each partition can process independently.
+
+This is a CORE distributed computing concept.
+
+---
+
+## Step 17 — Caching
+
+```python
+sdf.cache()
+```
+
+### What this does
+
+Stores dataframe in memory.
+
+Prevents recomputation.
+
+Improves performance.
+
+---
+
+## Step 18 — Partition Analysis
+
+```python
+mapPartitionsWithIndex()
+```
+
+### What this does
+
+Shows how data is distributed across partitions.
+
+Very important PDC demonstration.
+
+---
+
+## Step 19 — Spark MAP Operation
+
+```python
+sdf.rdd.map(...)
+```
+
+### What this does
+
+Applies transformation on distributed records.
+
+MAP is one of Spark's core operations.
+
+---
+
+## Step 20 — Spark FILTER Operation
+
+```python
+filter(col("seq_length") > 50)
+```
+
+### What this does
+
+Keeps only long proteins.
+
+Demonstrates distributed filtering.
+
+---
+
+## Step 21 — Spark GROUPBY Aggregation
+
+```python
+groupBy("species").agg(...)
+```
+
+### What this does
+
+Computes species-level statistics.
+
+### Example
+
+| Species | Avg Length |
+|---|---|
+| Cobra | 75 |
+| Viper | 120 |
+
+---
+
+## Step 22 — Export Results
+
+```python
+to_csv()
+```
+
+### What this does
+
+Saves processed outputs.
+
+### Generated files
+
+| File | Purpose |
+|---|---|
+| processed_features.csv | Extracted features |
+| species_summary.csv | Species statistics |
+| parquet files | Distributed storage |
+
+---
+
+# PART 3 — VISUALIZATION & MACHINE LEARNING
+
+## Step 23 — Load Data for Analysis
+
+```python
+pd.read_csv()
+```
+
+### What this does
+
+Loads processed data again.
+
+---
+
+## Step 24 — Summary Statistics
+
+Calculates:
+
+- total proteins
+- average lengths
+- species counts
+
+---
+
+## Step 25 — Histogram
+
+```python
+plt.hist()
+```
+
+### What this does
+
+Shows distribution of protein lengths.
+
+---
+
+## Step 26 — Species Bar Plot
+
+### What this does
+
+Shows species with highest protein counts.
+
+---
+
+## Step 27 — Heatmap
+
+```python
+sns.heatmap()
+```
+
+### What this does
+
+Visualizes amino acid frequencies across species.
+
+---
+
+## Step 28 — KMeans Clustering
+
+```python
+KMeans(n_clusters=4)
+```
+
+### What this does
+
+Groups proteins with similar properties.
+
+### Why clustering?
+
+To discover hidden biological patterns.
+
+---
+
+## Step 29 — PCA
+
+```python
+PCA(n_components=2)
+```
+
+### What this does
+
+Reduces dimensions for visualization.
+
+Because amino acid features are high-dimensional.
+
+---
+
+## Step 30 — PCA Cluster Plot
+
+### What this does
+
+Plots clusters in 2D space.
+
+Helps visualize protein grouping.
+
+---
+
+## Step 31 — Biological Interpretation
+
+Final section explains biological meaning of clusters.
+
+### Example
+
+| Cluster | Meaning |
+|---|---|
+| High cysteine | Neurotoxins |
+| Long proteins | Enzymes |
+
+This connects computational analysis to biology.
+
+---
+
+# MOST IMPORTANT THINGS YOUR TEACHER CARES ABOUT
+
+These are the strongest parts of your project:
+
+## 1. Parallel Processing
+
+```python
+Pool(processes=4)
+```
+
+---
+
+## 2. Dataset Scaling
+
+```python
+pd.concat([df_raw] * 50)
+```
+
+---
+
+## 3. Spark Distributed Operations
+
+- repartition
+- cache
+- groupBy
+- map
+- filter
+
+---
+
+## 4. Visualization
+
+You generated multiple meaningful plots.
+
+---
+
+## 5. Biological Interpretation
+
+You didn't just compute numbers.
+
+You explained biological meaning too.
+
+That matters a lot.
 ## 🗃️ Output Files
 
 | File | Description |
