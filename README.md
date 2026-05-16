@@ -221,38 +221,184 @@ Each processor:
 
 ---
 
-# Step 8 — Gather Results
+# Output Files and Results
 
-```python
-results = comm.gather(local_result, root=0)
-times = comm.gather(local_time, root=0)
-```
-
-### Purpose
-Results from all processors were collected back to the root processor.
+After parallel execution of the snake venom transcriptomics pipeline, multiple output files and analysis results were generated.
 
 ---
 
-# Step 9 — Benchmarking
+# Generated Output Files
 
-```python
-if rank == 0:
-    max_time = max(times)
-    avg_time = sum(times) / len(times)
-
-    print("Execution Times:", times)
-    print("Maximum Time:", max_time)
-    print("Average Time:", avg_time)
-```
-
-### Benchmarking Measures
-- Execution time
-- Average runtime
-- Maximum runtime
-- Processor efficiency
-- Load balancing
+| File | Description |
+|---|---|
+| `cleaned_dataset.csv` | Preprocessed and cleaned transcriptomics dataset |
+| `normalized_data.csv` | Normalized expression values |
+| `chunk_rank_0.csv` | Data chunk processed by MPI Rank 0 |
+| `chunk_rank_1.csv` | Data chunk processed by MPI Rank 1 |
+| `chunk_rank_2.csv` | Data chunk processed by MPI Rank 2 |
+| `chunk_rank_3.csv` | Data chunk processed by MPI Rank 3 |
+| `benchmark_results.txt` | Execution time and benchmarking statistics |
+| `execution_times.png` | Graph showing runtime of each MPI processor |
+| `final_results.csv` | Combined results gathered from all processors |
+| `transcript_analysis.csv` | Transcript-level analysis output |
+| `toxin_candidates.csv` | Identified venom toxin-related transcripts |
 
 ---
+
+# Output Features
+
+## 1. Cleaned Dataset
+The preprocessing step removed:
+- Missing values
+- Duplicate entries
+- Invalid transcript records
+
+### Output Example
+
+```python
+cleaned_data.to_csv("cleaned_dataset.csv", index=False)
+```
+
+---
+
+# 2. Normalized Dataset
+
+Expression values were normalized to improve:
+- Statistical consistency
+- Comparative analysis
+- Computational accuracy
+
+### Output Example
+
+```python
+normalized_data.to_csv("normalized_data.csv", index=False)
+```
+
+---
+
+# 3. Parallel Chunk Outputs
+
+Each MPI processor handled a separate chunk of the dataset.
+
+Example:
+- Rank 0 processed chunk 0
+- Rank 1 processed chunk 1
+- Rank 2 processed chunk 2
+- Rank 3 processed chunk 3
+
+### Saving Local Chunks
+
+```python
+local_chunk.to_csv(f"chunk_rank_{rank}.csv", index=False)
+```
+
+---
+
+# 4. Benchmarking Results
+
+Execution statistics included:
+- Processor runtime
+- Average execution time
+- Maximum execution time
+- Load balancing efficiency
+
+### Output Example
+
+```python
+with open("benchmark_results.txt", "w") as f:
+    f.write(f"Execution Times: {times}\n")
+```
+
+---
+
+# 5. Execution Time Graph
+
+A benchmarking graph was generated to visualize:
+- MPI rank performance
+- Runtime comparison
+- Parallel efficiency
+
+### Graph Generation
+
+```python
+plt.bar(range(size), times)
+plt.xlabel("MPI Rank")
+plt.ylabel("Execution Time")
+plt.title("MPI Benchmarking")
+plt.savefig("execution_times.png")
+```
+
+---
+
+# 6. Final Gathered Results
+
+After parallel processing, all local results were gathered into a single combined output.
+
+### MPI Gather
+
+```python
+final_results = comm.gather(local_result, root=0)
+```
+
+### Saving Final Results
+
+```python
+combined_results.to_csv("final_results.csv", index=False)
+```
+
+---
+
+# 7. Transcript Analysis Results
+
+The transcript-level analysis identified:
+- Highly expressed venom genes
+- Transcript abundance
+- Expression patterns
+
+### Output File
+
+```bash
+transcript_analysis.csv
+```
+
+---
+
+# 8. Toxin Candidate Identification
+
+Potential venom toxin transcripts were identified based on:
+- Expression levels
+- Sequence characteristics
+- Transcript annotations
+
+### Output File
+
+```bash
+toxin_candidates.csv
+```
+
+---
+
+# Benchmarking Graph Interpretation
+
+The benchmarking graph showed:
+- Nearly equal execution time across processors
+- Efficient workload distribution
+- High load balancing efficiency
+- Reduced runtime using parallel execution
+
+### Observation
+Lower variation between MPI ranks indicates effective parallelization.
+
+---
+
+# Final Outcome
+
+The project successfully demonstrated:
+- Parallel transcriptomics processing
+- Efficient MPI-based workload distribution
+- Reduced computational runtime
+- Effective benchmarking and scalability
+- Biological transcript analysis using parallel computing
 
 # Step 10 — Visualization
 
